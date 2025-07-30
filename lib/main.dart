@@ -39,6 +39,7 @@ class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController _controller;
   bool _isConnected = true;
   bool _showFAB = true; // Controls FAB visibility
+  bool _isLoading = true; // Controls the loading spinner
 
   /// Check for active internet connection
   Future<void> _checkConnection() async {
@@ -111,9 +112,12 @@ class _WebViewPageState extends State<WebViewPage> {
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
           ..setNavigationDelegate(
             NavigationDelegate(
+              onPageStarted: (_) {
+                setState(() => _isLoading = true);
+              },
               onPageFinished: (String url) {
-                // Show FAB only if NOT on login page
                 setState(() {
+                  _isLoading = false; // Hide spinner
                   _showFAB = url != "https://zira-homes.com/index.php";
                 });
               },
@@ -163,7 +167,17 @@ class _WebViewPageState extends State<WebViewPage> {
     return Scaffold(
       body: SafeArea(
         child: _isConnected
-            ? WebViewWidget(controller: _controller)
+            ? Stack(
+                children: [
+                  WebViewWidget(controller: _controller),
+                  if (_isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.green,
+                      ),
+                    )
+                ],
+              )
             : _offlineFallback(),
       ),
       floatingActionButton: _showFAB && _isConnected
