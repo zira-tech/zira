@@ -80,6 +80,19 @@ class _WebViewPageState extends State<WebViewPage> {
     super.initState();
     _checkConnection();
 
+    // Listen for connectivity changes
+    Connectivity().onConnectivityChanged.listen((result) {
+      final hasInternet = result != ConnectivityResult.none;
+      if (hasInternet != _isConnected) {
+        setState(() {
+          _isConnected = hasInternet;
+        });
+        if (hasInternet) {
+          _controller.reload(); // reload webview when back online
+        }
+      }
+    });
+
     // Choose correct platform controller
     PlatformWebViewControllerCreationParams params;
 
@@ -99,10 +112,9 @@ class _WebViewPageState extends State<WebViewPage> {
           ..setNavigationDelegate(
             NavigationDelegate(
               onPageFinished: (String url) {
-                // Hide FABs only if the current URL is exactly the login page
+                // Show FAB only if not on login page
                 setState(() {
-                  _showFAB = url == "https://zira-homes.com/index.php";
-                  _showFAB = !_showFAB; // Hide only when at login page
+                  _showFAB = url != "https://zira-homes.com/index.php";
                 });
               },
               onNavigationRequest: (NavigationRequest request) async {
@@ -151,15 +163,48 @@ class _WebViewPageState extends State<WebViewPage> {
       body: SafeArea(
         child: _isConnected
             ? WebViewWidget(controller: _controller)
-            : const Center(
-                child: Text(
-                  'You are not connected to any network',
-                  style: TextStyle(fontSize: 18, color: Colors.red),
-                  textAlign: TextAlign.center,
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      '📡',
+                      style: TextStyle(fontSize: 80),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'You are offline',
+                      style:
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Please check your internet connection\nand try again.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 30),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      label: const Text("Retry"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 30, vertical: 12),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                      onPressed: () async {
+                        await _checkConnection();
+                        if (_isConnected) {
+                          _controller.reload();
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
       ),
-      floatingActionButton: _showFAB
+      floatingActionButton: _showFAB && _isConnected
           ? Padding(
               padding: const EdgeInsets.only(bottom: 20.0),
               child: Row(
@@ -187,7 +232,7 @@ class _WebViewPageState extends State<WebViewPage> {
                 ],
               ),
             )
-          : null, // Hide FABs when _showFAB is false
+          : null,
     );
   }
 }
