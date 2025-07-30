@@ -205,34 +205,35 @@ class _WebViewPageState extends State<WebViewPage> {
               ),
       ),
       floatingActionButton: _showFAB && _isConnected
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FloatingActionButton(
-                    heroTag: "apartments_btn",
-                    tooltip: 'Apartments',
-                    child: const Icon(Icons.apartment),
-                    onPressed: () {
-                      _controller.loadRequest(Uri.parse(
-                          'https://zira-homes.com/landlord/apartments_list.php'));
-                    },
-                  ),
-                  const SizedBox(width: 15),
-                  FloatingActionButton(
-                    heroTag: "invoices_btn",
-                    tooltip: 'Invoices',
-                    child: const Icon(Icons.receipt_long),
-                    onPressed: () {
-                      _controller.loadRequest(Uri.parse(
-                          'https://zira-homes.com/landlord/invoices.php'));
-                    },
-                  ),
-                ],
-              ),
-            )
-          : null,
+    ? Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center, // Center horizontally
+          children: [
+            FloatingActionButton(
+              heroTag: "apartments_btn",
+              tooltip: 'Apartments',
+              child: const Icon(Icons.apartment),
+              onPressed: () {
+                _controller.loadRequest(Uri.parse(
+                    'https://zira-homes.com/landlord/apartments_list.php'));
+              },
+            ),
+            const SizedBox(width: 30), // More space between buttons
+            FloatingActionButton(
+              heroTag: "invoices_btn",
+              tooltip: 'Invoices',
+              child: const Icon(Icons.receipt_long),
+              onPressed: () {
+                _controller.loadRequest(Uri.parse(
+                    'https://zira-homes.com/landlord/invoices.php'));
+              },
+            ),
+          ],
+        ),
+      )
+    : null,
+
     );
   }
 }
