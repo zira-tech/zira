@@ -38,6 +38,7 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController _controller;
   bool _isConnected = true;
+  bool _showFAB = true; // Controls FAB visibility
 
   /// Checks for active internet connection
   Future<void> _checkConnection() async {
@@ -97,6 +98,13 @@ class _WebViewPageState extends State<WebViewPage> {
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
           ..setNavigationDelegate(
             NavigationDelegate(
+              onPageFinished: (String url) {
+                // Hide FABs only if the current URL is exactly the login page
+                setState(() {
+                  _showFAB = url == "https://zira-homes.com/index.php";
+                  _showFAB = !_showFAB; // Hide only when at login page
+                });
+              },
               onNavigationRequest: (NavigationRequest request) async {
                 final url = request.url;
 
@@ -127,7 +135,6 @@ class _WebViewPageState extends State<WebViewPage> {
       final AndroidWebViewController androidController =
           controller.platform as AndroidWebViewController;
 
-      // Enable debugging for dev builds
       AndroidWebViewController.enableDebugging(true);
 
       androidController.setOnShowFileSelector((FileSelectorParams params) async {
@@ -152,33 +159,35 @@ class _WebViewPageState extends State<WebViewPage> {
                 ),
               ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            FloatingActionButton(
-              heroTag: "apartments_btn",
-              tooltip: 'Apartments',
-              child: const Icon(Icons.apartment),
-              onPressed: () {
-                _controller.loadRequest(Uri.parse(
-                    'https://zira-homes.com/landlord/apartments_list.php'));
-              },
-            ),
-            const SizedBox(width: 15),
-            FloatingActionButton(
-              heroTag: "invoices_btn",
-              tooltip: 'Invoices',
-              child: const Icon(Icons.receipt_long),
-              onPressed: () {
-                _controller.loadRequest(Uri.parse(
-                    'https://zira-homes.com/landlord/invoices.php'));
-              },
-            ),
-          ],
-        ),
-      ),
+      floatingActionButton: _showFAB
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FloatingActionButton(
+                    heroTag: "apartments_btn",
+                    tooltip: 'Apartments',
+                    child: const Icon(Icons.apartment),
+                    onPressed: () {
+                      _controller.loadRequest(Uri.parse(
+                          'https://zira-homes.com/landlord/apartments_list.php'));
+                    },
+                  ),
+                  const SizedBox(width: 15),
+                  FloatingActionButton(
+                    heroTag: "invoices_btn",
+                    tooltip: 'Invoices',
+                    child: const Icon(Icons.receipt_long),
+                    onPressed: () {
+                      _controller.loadRequest(Uri.parse(
+                          'https://zira-homes.com/landlord/invoices.php'));
+                    },
+                  ),
+                ],
+              ),
+            )
+          : null, // Hide FABs when _showFAB is false
     );
   }
 }
