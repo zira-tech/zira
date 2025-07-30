@@ -40,7 +40,7 @@ class _WebViewPageState extends State<WebViewPage> {
   bool _isConnected = true;
   bool _showFAB = true; // Controls FAB visibility
 
-  /// Checks for active internet connection
+  /// Check for active internet connection
   Future<void> _checkConnection() async {
     final connectivityResult = await Connectivity().checkConnectivity();
     setState(() {
@@ -80,7 +80,7 @@ class _WebViewPageState extends State<WebViewPage> {
     super.initState();
     _checkConnection();
 
-    // Listen for connectivity changes
+    // Auto-listen for connectivity changes
     Connectivity().onConnectivityChanged.listen((result) {
       final hasInternet = result != ConnectivityResult.none;
       if (hasInternet != _isConnected) {
@@ -88,16 +88,16 @@ class _WebViewPageState extends State<WebViewPage> {
           _isConnected = hasInternet;
         });
         if (hasInternet) {
-          _controller.reload(); // reload webview when back online
+          _controller.reload(); // Reload WebView when back online
         }
       }
     });
 
-    // Choose correct platform controller
+    // Create platform-aware WebViewController
     PlatformWebViewControllerCreationParams params;
 
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
-      // iOS-specific settings
+      // iOS-specific
       params = WebKitWebViewControllerCreationParams(
         allowsInlineMediaPlayback: true,
         mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
@@ -112,7 +112,7 @@ class _WebViewPageState extends State<WebViewPage> {
           ..setNavigationDelegate(
             NavigationDelegate(
               onPageFinished: (String url) {
-                // Show FAB only if not on login page
+                // Show FAB only if NOT on login page
                 setState(() {
                   _showFAB = url != "https://zira-homes.com/index.php";
                 });
@@ -120,6 +120,7 @@ class _WebViewPageState extends State<WebViewPage> {
               onNavigationRequest: (NavigationRequest request) async {
                 final url = request.url;
 
+                // External apps handling
                 if (url.startsWith('tel:') || url.startsWith('mailto:')) {
                   final uri = Uri.parse(url);
                   _showToast('Opening external application…');
@@ -142,7 +143,7 @@ class _WebViewPageState extends State<WebViewPage> {
           )
           ..loadRequest(Uri.parse('https://zira-homes.com'));
 
-    // Android: intercept <input type="file">
+    // Android: intercept file uploads
     if (controller.platform is AndroidWebViewController) {
       final AndroidWebViewController androidController =
           controller.platform as AndroidWebViewController;
@@ -163,77 +164,80 @@ class _WebViewPageState extends State<WebViewPage> {
       body: SafeArea(
         child: _isConnected
             ? WebViewWidget(controller: _controller)
-            : Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '📡',
-                      style: TextStyle(fontSize: 80),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'You are offline',
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Please check your internet connection\nand try again.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 30),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.refresh),
-                      label: const Text("Retry"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 30, vertical: 12),
-                        textStyle: const TextStyle(fontSize: 18),
-                      ),
-                      onPressed: () async {
-                        await _checkConnection();
-                        if (_isConnected) {
-                          _controller.reload();
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
+            : _offlineFallback(),
       ),
       floatingActionButton: _showFAB && _isConnected
-    ? Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center, // Center horizontally
-          children: [
-            FloatingActionButton(
-              heroTag: "apartments_btn",
-              tooltip: 'Apartments',
-              child: const Icon(Icons.apartment),
-              onPressed: () {
-                _controller.loadRequest(Uri.parse(
-                    'https://zira-homes.com/landlord/apartments_list.php'));
-              },
-            ),
-            const SizedBox(width: 30), // More space between buttons
-            FloatingActionButton(
-              heroTag: "invoices_btn",
-              tooltip: 'Invoices',
-              child: const Icon(Icons.receipt_long),
-              onPressed: () {
-                _controller.loadRequest(Uri.parse(
-                    'https://zira-homes.com/landlord/invoices.php'));
-              },
-            ),
-          ],
-        ),
-      )
-    : null,
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, // Center FABs
+                children: [
+                  FloatingActionButton(
+                    heroTag: "apartments_btn",
+                    tooltip: 'Apartments',
+                    child: const Icon(Icons.apartment),
+                    onPressed: () {
+                      _controller.loadRequest(Uri.parse(
+                          'https://zira-homes.com/landlord/apartments_list.php'));
+                    },
+                  ),
+                  const SizedBox(width: 30),
+                  FloatingActionButton(
+                    heroTag: "invoices_btn",
+                    tooltip: 'Invoices',
+                    child: const Icon(Icons.receipt_long),
+                    onPressed: () {
+                      _controller.loadRequest(Uri.parse(
+                          'https://zira-homes.com/landlord/invoices.php'));
+                    },
+                  ),
+                ],
+              ),
+            )
+          : null,
+    );
+  }
 
+  /// Offline fallback widget with Retry button
+  Widget _offlineFallback() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            '📡',
+            style: TextStyle(fontSize: 80),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'You are offline',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Please check your internet connection\nand try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.refresh),
+            label: const Text("Retry"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              textStyle: const TextStyle(fontSize: 18),
+            ),
+            onPressed: () async {
+              await _checkConnection();
+              if (_isConnected) {
+                _controller.reload();
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 }
